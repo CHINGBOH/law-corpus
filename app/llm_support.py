@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import json
 import os
 import re
@@ -8,6 +9,12 @@ import urllib.request
 
 from db_access import clip, psql_json, sql_quote
 from query_defs import LEGAL_TERMS, QUERIES, TERM_EXPANSIONS
+
+
+def esc(value: object) -> str:
+    if value is None:
+        return ""
+    return html.escape(str(value), quote=True)
 
 
 DEEPSEEK_API_URL = os.environ.get(
@@ -275,8 +282,6 @@ def markdown_to_html(markdown: str) -> str:
 
 
 def inline_md(text: str) -> str:
-    from ui import esc
-
     value = esc(text)
     value = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", value)
     value = re.sub(r"`([^`]+)`", r"<code>\1</code>", value)

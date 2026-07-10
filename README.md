@@ -37,7 +37,10 @@ legal-corpus/
 │   ├── agent_service.py
 │   ├── query_defs.py
 │   ├── llm_support.py
-│   └── ui.py
+│   ├── workspace_service.py
+│   └── static/            # built frontend output (generated, not committed)
+├── frontend/               # Vue 3 + Vite research workstation (SPA)
+│   └── src/
 ├── analysis/
 │   └── company_law.duckdb.sql
 ├── xml-akn/
@@ -68,12 +71,31 @@ PGUSER=legal_corpus
 PGPASSWORD=legal_corpus_dev
 ```
 
-## Local Single-Port App
+## App: Python API + Vue Research Workstation
 
-The local experiment app serves HTML pages and JSON APIs from the same port. It
-uses `psql` to query PostgreSQL, so no Python database driver is required.
+The backend (`app/server.py`) is a stdlib `http.server` app that serves JSON
+`/api/*` endpoints and, in production, the built frontend as static files
+(SPA fallback to `index.html` so client-side routes survive a hard refresh).
+It uses `psql` to query PostgreSQL, so no Python database driver is required.
+The frontend (`frontend/`) is a Vue 3 + Vite single-page app — the research
+workstation UI (graph explorer, review queue, article readers, compare view,
+topic/domain/instrument browsers).
+
+**Development** (two ports — backend serves the API, Vite serves the UI and
+proxies `/api/*` to the backend):
 
 ```bash
+python3 legal-corpus/app/server.py        # terminal A, http://127.0.0.1:8000
+cd legal-corpus/frontend && npm install && npm run dev  # terminal B, http://127.0.0.1:5173
+```
+
+Open `http://127.0.0.1:5173` during development.
+
+**Production** (single port — build the frontend into `app/static/`, then run
+only the Python server):
+
+```bash
+cd legal-corpus/frontend && npm run build   # outputs to ../app/static
 python3 legal-corpus/app/server.py
 ```
 
@@ -83,33 +105,45 @@ Open:
 http://127.0.0.1:8000
 ```
 
-Available API paths on the same port:
+Aggregated view endpoints used by the frontend (`/api/workspace/*`, each
+returns everything one SPA route needs in a single call — labels, hrefs, and
+groupings pre-resolved server-side):
+
+```text
+GET  /api/workspace/home
+GET  /api/workspace/search?q=注册资本
+GET  /api/workspace/graph?node_key=legal_unit:company_law:2023:article_47&to_node_key=
+GET  /api/workspace/reader?version=cn_company_law_2023&article=47
+GET  /api/workspace/instrument-reader?slug=cn_civil_code&unit=61
+GET  /api/workspace/compare?left=cn_company_law_2018&right=cn_company_law_2023&article=47
+GET  /api/workspace/instrument?slug=cn_company_law
+GET  /api/workspace/domain?slug=commercial-organization
+GET  /api/workspace/topic?slug=capital-credit
+GET  /api/workspace/review?status=pending&candidate_id=
+POST /api/workspace/review/candidate/accept   {candidate_id, status}
+POST /api/workspace/review/candidate/reject   {candidate_id, review_note, status}
+POST /api/workspace/review/candidate/edit     {candidate_id, relation_type, claim_text, confidence, review_note, status}
+```
+
+The three review POST endpoints return the entire refreshed queue bundle
+(list + selected detail), not just the mutated row, so the frontend never
+needs a separate re-fetch after accept/reject/edit.
+
+Lower-level raw endpoints, kept for scripting/debugging independent of any
+page's presentation layer:
 
 ```text
 /api/stats
-/api/domains
-/api/topics
-/api/topic?slug=capital-credit
-/api/instruments
-/api/instrument?slug=cn_company_law
-/api/instrument-units?slug=cn_civil_code
-/api/domain?slug=commercial-organization
-/api/relations?instrument=cn_company_law
 /api/versions
 /api/contexts
 /api/sources
+/api/search?q=注册资本
+/api/evidence/excerpts?source_slug=src_registration_regulation_2021_gov
 /api/graph/node?node_key=legal_unit:company_law:2023:article_47
 /api/graph/neighbors?node_key=legal_unit:company_law:2023:article_47
 /api/graph/path?from_node_key=legal_unit:company_law:2023:article_47&to_node_key=context_event:cn_registration_capital_reform_2013
-/api/review/candidates?status=pending
-/api/review/candidate?candidate_id=...
-/api/evidence/excerpts?source_slug=src_registration_regulation_2021_gov
-/api/agent/extract-relations
-/api/search?q=注册资本
-/api/ask
-/api/articles?version=cn_company_law_2023
-/api/article?version=cn_company_law_2023&article=47
-/api/compare?left=cn_company_law_2018&right=cn_company_law_2023&article=47
+/api/agent/extract-relations   (POST {canonical_ref})
+/api/ask                        (POST {question}, DeepSeek Q&A, see below)
 ```
 
 DeepSeek question answering is enabled when `DEEPSEEK_API_KEY` is set:
@@ -125,24 +159,20 @@ version timeline, cross-law relations, policy/history evidence, and matching
 legal units. The response is requested as concise Markdown and rendered as a
 styled answer card in the page.
 
-Reader pages on the same port:
+Frontend routes (client-side, Vue Router history mode — same path/query
+scheme as the endpoints above):
 
 ```text
+/                                    home
+/search?q=
 /instrument?slug=cn_company_law
 /domain?slug=commercial-organization
 /topic?slug=capital-credit
 /graph?node_key=legal_unit:company_law:2023:article_47
-/review
+/review?status=pending
 /law?version=cn_company_law_2023&article=47
+/instrument-reader?slug=cn_civil_code&unit=61
 /compare?left=cn_company_law_2018&right=cn_company_law_2023&article=47
-```
-
-Review actions on the same port:
-
-```text
-POST /api/review/candidate/accept
-POST /api/review/candidate/reject
-POST /api/review/candidate/edit
 ```
 
 ## Legal-System Base
