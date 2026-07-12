@@ -132,3 +132,32 @@ finished task.
 <!-- Append one line per session with date + which checkpoint(s) completed, so a
      resumed /loop invocation can tell what's already done without re-deriving it
      from git diff alone. Do not delete prior entries. -->
+
+- 2026-07-11: All 4 checkpoints done. Installed `vis-network` + explicit `vis-data`
+  (checkpoint 1 note: `vis-network`'s `main`/`module` fields resolve to a "peer" build
+  that does NOT export `DataSet` despite its `.d.ts` claiming otherwise — import
+  `DataSet` from `vis-data` directly, not from `vis-network`, or Vite throws
+  `SyntaxError: does not provide an export named 'DataSet'` at runtime and the whole
+  app goes blank). Built `RelationGraphCanvas.vue` (checkpoint 2) — hit and fixed a
+  second real bug: don't set per-group `font.color` to white assuming it colors a
+  badge-style label — `shape:'dot'` nodes render their label as canvas text *below*
+  the node on the page background, so white-on-light-background text is invisible;
+  keep node font color dark globally instead. Wired the 连线图/列表 tab toggle into
+  `GraphView.vue` (checkpoint 3), default tab `'graph'`, `RelationBoard` preserved
+  unchanged as list mode. Verified live via `:5173/graph` for both
+  `legal_unit:company_law:2023:article_47` (few edges) and
+  `legal_instrument:cn_company_law` (11 institutional + 7 structural edges) — correct
+  node/edge labels, correct group coloring, dashed/undirected structural edges vs.
+  solid/directed/labeled institutional edges, tab toggle switches cleanly both ways,
+  zero console errors on every check. **One caveat**: canvas click-to-navigate
+  (`network.on('click', ...)` → `emit('navigate', ...)` → `GraphView`'s `openNode`)
+  is implemented per vis-network's standard documented event API and type-checks, and
+  the downstream `openNode` router-push it calls was independently verified working
+  via a real click in list mode (same function, different trigger) — but a live click
+  *on the canvas itself* could not be automated: vis-network's click handling goes
+  through Hammer.js gesture recognition bound to the canvas element, and synthetic
+  `PointerEvent`/`MouseEvent`s dispatched via `page.evaluate` don't register as a
+  Hammer "tap" (needs trusted, OS-level input). If picking this back up, either accept
+  code-review-level confidence for that one link, or have a human click a node once
+  to confirm — don't burn more time on synthetic-event workarounds, it's a tooling
+  limit, not a sign of a bug.

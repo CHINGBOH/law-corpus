@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import ContextSidebar from "@/components/ContextSidebar.vue";
 import SidebarCard from "@/components/SidebarCard.vue";
 import RelationBoard from "@/components/RelationBoard.vue";
+import RelationGraphCanvas from "@/components/RelationGraphCanvas.vue";
 import { useGraphView } from "@/composables/useGraphView";
 
 const route = useRoute();
@@ -12,6 +13,7 @@ const { data, loading, error, extractStatus, load, extractCandidates } = useGrap
 
 const nodeKeyInput = ref("");
 const toNodeKeyInput = ref("");
+const viewTab = ref<"graph" | "list">("graph");
 
 function currentNodeKey(): string {
   const value = route.query.node_key;
@@ -142,7 +144,21 @@ const pathChain = computed(() => {
           </SidebarCard>
         </ContextSidebar>
 
-        <RelationBoard :grouped-relations="data.grouped_relations" :neighbors="data.neighbors" />
+        <div class="view-pane">
+          <div class="view-tabs">
+            <button type="button" :class="{ active: viewTab === 'graph' }" @click="viewTab = 'graph'">连线图</button>
+            <button type="button" :class="{ active: viewTab === 'list' }" @click="viewTab = 'list'">列表</button>
+          </div>
+          <RelationGraphCanvas
+            v-if="viewTab === 'graph'"
+            :node="data.node"
+            :structural-neighbors="data.structural_neighbors"
+            :grouped-relations="data.grouped_relations"
+            :neighbors="data.neighbors"
+            @navigate="openNode"
+          />
+          <RelationBoard v-else :grouped-relations="data.grouped_relations" :neighbors="data.neighbors" />
+        </div>
       </section>
     </main>
   </div>
@@ -235,6 +251,31 @@ const pathChain = computed(() => {
   grid-template-columns: 340px 1fr;
   gap: 20px;
   align-items: start;
+}
+
+.view-pane {
+  min-width: 0;
+}
+
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.view-tabs button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.view-tabs button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
 }
 
 .hint-box {
