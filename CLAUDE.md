@@ -22,6 +22,7 @@ psql -d legal_corpus -f sql/002_seed_company_law.sql
 psql -d legal_corpus -f sql/004_legal_system_base.sql
 psql -d legal_corpus -f sql/005_topics_and_explanations.sql
 psql -d legal_corpus -f sql/006_graph_review_stack.sql
+psql -d legal_corpus -f sql/007_chinese_fts.sql
 psql -d legal_corpus -f sql/003_validation_queries.sql   # sanity checks, run last
 ```
 
@@ -168,6 +169,13 @@ straight into `app/static/` for the Python server to host in production.
 - `006_graph_review_stack.sql` — `relation_candidates` (pending graph edges awaiting
   review) and the `v_graph_nodes`/`v_graph_edges` views that project instruments,
   versions, articles, context events, and relations into a graph read model.
+- `007_chinese_fts.sql` — installs the `zhparser` extension (SCWS-based Chinese word
+  segmentation) and a `chinesecfg` text-search configuration, then rebuilds the
+  `documents`/`legal_units` FTS indexes against it. Postgres's default `'simple'`
+  config doesn't tokenize Chinese (a whole clause becomes one token), which silently
+  broke `/api/search` and `QUERIES["search"]`'s ranking for any Chinese query; both
+  now use `'chinesecfg'`. Does not affect `search_relevant_units()` in
+  `llm_support.py`, which is separately `ILIKE`-based.
 - `003_validation_queries.sql` — sanity/consistency checks, run last, not schema DDL.
 
 ### Evidence rule (applies to data, not just code)

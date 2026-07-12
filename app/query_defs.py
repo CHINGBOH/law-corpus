@@ -531,15 +531,15 @@ QUERIES = {
                  lu.canonical_ref, lu.unit_type, lu.unit_number, lu.unit_number_int,
                  lu.title, lu.text,
                  ts_rank(
-                   to_tsvector('simple', coalesce(lu.title, '') || ' ' || coalesce(lu.text, '')),
-                   plainto_tsquery('simple', %(query)s)
+                   to_tsvector('chinesecfg', coalesce(lu.title, '') || ' ' || coalesce(lu.text, '')),
+                   plainto_tsquery('chinesecfg', %(query)s)
                  ) AS rank,
                  lu.order_index
           FROM legal_units lu
           JOIN legal_versions lv ON lv.id = lu.version_id
           JOIN legal_instruments li ON li.id = lv.instrument_id
-          WHERE to_tsvector('simple', coalesce(lu.title, '') || ' ' || coalesce(lu.text, ''))
-                @@ plainto_tsquery('simple', %(query)s)
+          WHERE to_tsvector('chinesecfg', coalesce(lu.title, '') || ' ' || coalesce(lu.text, ''))
+                @@ plainto_tsquery('chinesecfg', %(query)s)
           LIMIT 50
         ) t;
     """,

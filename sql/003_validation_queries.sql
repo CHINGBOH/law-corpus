@@ -24,6 +24,10 @@ SELECT relation_type, claim_text, confidence, evidence_level
 FROM v_context_claims
 WHERE claim_text ILIKE '%新加坡%';
 
+-- Expected: t. Chinese FTS must tokenize below clause boundaries.
+SELECT to_tsvector('chinesecfg', text) @@ plainto_tsquery('chinesecfg', '法人') AS zh_fts_matches
+FROM legal_units WHERE canonical_ref = 'civil_code:2020:article_57';
+
 -- Expected: policy/history context linked to 2013 and 2023 versions.
 SELECT
   lv.version_label,

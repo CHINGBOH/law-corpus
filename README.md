@@ -28,7 +28,8 @@ legal-corpus/
 │   ├── 003_validation_queries.sql
 │   ├── 004_legal_system_base.sql
 │   ├── 005_topics_and_explanations.sql
-│   └── 006_graph_review_stack.sql
+│   ├── 006_graph_review_stack.sql
+│   └── 007_chinese_fts.sql
 ├── app/
 │   ├── server.py
 │   ├── db_access.py
@@ -58,6 +59,7 @@ psql -d legal_corpus -f legal-corpus/sql/002_seed_company_law.sql
 psql -d legal_corpus -f legal-corpus/sql/004_legal_system_base.sql
 psql -d legal_corpus -f legal-corpus/sql/005_topics_and_explanations.sql
 psql -d legal_corpus -f legal-corpus/sql/006_graph_review_stack.sql
+psql -d legal_corpus -f legal-corpus/sql/007_chinese_fts.sql
 psql -d legal_corpus -f legal-corpus/sql/003_validation_queries.sql
 ```
 
