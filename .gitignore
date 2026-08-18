@@ -52,3 +52,5 @@ third-party/
 benchmarks/
 generated/
 migrations/
+
+.claude/
